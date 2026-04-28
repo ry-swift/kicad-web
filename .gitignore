@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# oh-my-codex 本地运行状态
+.omx/
+
+# KiCad 本地状态和临时文件
+*.kicad_prl
+*.lck
+*.bak
+*-backups/
+.history/
+
+# 通用临时目录
+tmp/
+temp/
