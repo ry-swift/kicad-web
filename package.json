@@ -1,0 +1,25 @@
+{
+  "name": "kicad-symbol-web-renderer",
+  "version": "0.1.0",
+  "description": "KiCad symbol library parser, IR foundation and web renderer pipeline.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:web": "vite build",
+    "dev": "vite --host 127.0.0.1",
+    "preview": "vite preview --host 127.0.0.1",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.4.2",
+    "vite": "^5.4.21",
+    "vitest": "^2.1.9"
+  },
+  "dependencies": {
+    "pixi.js": "^8.18.1",
+    "vue": "^3.5.33"
+  }
+}

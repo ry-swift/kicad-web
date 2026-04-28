@@ -1345,15 +1345,101 @@
 			(embedded_fonts no)
 		)
 	)
+	(junction
+		(at 162.56 57.15)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "f9ed2d97-73ff-4a1b-b692-a473ba07b5c9")
+	)
 	(wire
 		(pts
-			(xy 110.49 53.34) (xy 132.08 53.34)
+			(xy 170.18 57.15) (xy 189.23 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "06973c04-3451-41d7-927c-1c92891276ab")
+	)
+	(wire
+		(pts
+			(xy 118.11 53.34) (xy 110.49 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "32a35d02-c17e-4a14-a994-eb1c08685a8a")
+	)
+	(wire
+		(pts
+			(xy 162.56 80.01) (xy 162.56 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8ccec0ea-36aa-4dc1-92dd-8fa63bc49691")
+	)
+	(wire
+		(pts
+			(xy 189.23 57.15) (xy 189.23 58.42)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "941ced71-c8bf-4bdf-83c8-be0bd0ca604a")
+	)
+	(wire
+		(pts
+			(xy 162.56 53.34) (xy 165.1 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "a4e5d997-8e57-46d3-8b61-0620e9931bfc")
+	)
+	(wire
+		(pts
+			(xy 118.11 80.01) (xy 132.08 80.01)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "b951ca81-f866-477b-a4d5-736cd9d31be3")
+	)
+	(wire
+		(pts
+			(xy 152.4 80.01) (xy 162.56 80.01)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bc29cd00-45de-400b-a277-cd3c880e1059")
+	)
+	(wire
+		(pts
+			(xy 118.11 80.01) (xy 118.11 53.34)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e130725b-7d28-40b1-b957-c4b236b3c458")
+	)
+	(wire
+		(pts
+			(xy 162.56 53.34) (xy 162.56 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eec61176-308a-4129-95c2-b67377704032")
 	)
 	(symbol
 		(lib_id "Device:R")
@@ -1437,7 +1523,7 @@
 	)
 	(symbol
 		(lib_id "Driver_FET:TLP250")
-		(at 142.24 60.96 0)
+		(at 142.24 87.63 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -1448,7 +1534,7 @@
 		(fields_autoplaced yes)
 		(uuid "1c9268e2-d325-4259-91c4-b7d2665be767")
 		(property "Reference" "U1"
-			(at 142.24 46.99 0)
+			(at 142.24 73.66 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1458,7 +1544,7 @@
 			)
 		)
 		(property "Value" "TLP250"
-			(at 142.24 49.53 0)
+			(at 142.24 76.2 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -1468,7 +1554,7 @@
 			)
 		)
 		(property "Footprint" "Package_DIP:DIP-8_W7.62mm"
-			(at 142.24 71.12 0)
+			(at 142.24 97.79 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1480,7 +1566,7 @@
 			)
 		)
 		(property "Datasheet" "http://toshiba.semicon-storage.com/info/docget.jsp?did=16821&prodName=TLP250"
-			(at 139.954 60.833 0)
+			(at 139.954 87.503 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1492,7 +1578,7 @@
 			)
 		)
 		(property "Description" "Gate Drive Optocoupler, Output Current 1.5/1.5A, DIP-8"
-			(at 142.24 60.96 0)
+			(at 142.24 87.63 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

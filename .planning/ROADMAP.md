@@ -12,7 +12,7 @@
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Parser And Symbol IR Foundation** - 建立 `.kicad_sym` 导入、AST/IR 和安全序列化基础。
+- [x] **Phase 1: Parser And Symbol IR Foundation** - 建立 `.kicad_sym` 导入、AST/IR 和安全序列化基础。 (completed 2026-04-28)
 - [ ] **Phase 2: Accurate SVG Symbol Renderer** - 实现与 KiCad CLI 可对照的 SVG 精确渲染路径。
 - [ ] **Phase 3: KiCad CLI Validation Harness** - 建立结构、语义和视觉回归验证体系。
 - [ ] **Phase 4: PixiJS Interactive Renderer** - 接入 PixiJS 作为高性能交互画布。
@@ -31,12 +31,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. System preserves unknown or future KiCad tokens without silently dropping them.
   3. Exported `.kicad_sym` can be opened or upgraded by KiCad CLI without format errors.
   4. Symbol IR has stable IDs for renderer and editor layers to reference.
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 01-01: Implement S-expression CST parser and printer.
-- [ ] 01-02: Map CST to typed KiCad Symbol AST and Symbol IR.
-- [ ] 01-03: Implement serializer and round-trip tests for sample symbols.
+- [x] 01-01: Implement S-expression CST parser and printer.
+- [x] 01-02: Map CST to typed KiCad Symbol AST and Symbol IR.
+- [x] 01-03: Implement serializer and round-trip tests for sample symbols.
+- [x] 01-04: Add Vue 3 + PixiJS Web preview for the parsed TLP250 symbol.
 
 ### Phase 2: Accurate SVG Symbol Renderer
 **Goal**: Symbol IR 可以渲染为确定性 SVG，并覆盖 KiCad 符号图元、pin、文本、stroke/fill 和主题语义。
@@ -138,7 +139,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Parser And Symbol IR Foundation | 0/3 | Not started | - |
+| 1. Parser And Symbol IR Foundation | 4/4 | Complete    | 2026-04-28 |
 | 2. Accurate SVG Symbol Renderer | 0/3 | Not started | - |
 | 3. KiCad CLI Validation Harness | 0/2 | Not started | - |
 | 4. PixiJS Interactive Renderer | 0/3 | Not started | - |

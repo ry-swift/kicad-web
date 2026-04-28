@@ -14,3 +14,17 @@
 # 通用临时目录
 tmp/
 temp/
+
+# 构建产物
+dist/
+dist-web/
+node_modules/
+
+.planning/
+
+tests/
+
+**/tests/**
+**/test/**
+*.spec.*
+*.test.*

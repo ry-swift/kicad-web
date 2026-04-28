@@ -9,10 +9,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### KiCad Format Core
 
-- [ ] **KICAD-01**: User can import a KiCad 6.0+ `.kicad_sym` file containing one or more symbols.
-- [ ] **KICAD-02**: System preserves known and unknown S-expression structures needed for safe round-trip serialization.
-- [ ] **KICAD-03**: System represents symbol properties, mandatory fields, hidden fields, effects, stroke and fill settings in a typed IR.
-- [ ] **KICAD-04**: System represents multi-unit symbols, common unit graphics, alternate body style identifiers and `extends`-based derived symbols.
+- [x] **KICAD-01**: User can import a KiCad 6.0+ `.kicad_sym` file containing one or more symbols.
+- [x] **KICAD-02**: System preserves known and unknown S-expression structures needed for safe round-trip serialization.
+- [x] **KICAD-03**: System represents symbol properties, mandatory fields, hidden fields, effects, stroke and fill settings in a typed IR.
+- [x] **KICAD-04**: System represents multi-unit symbols, common unit graphics, alternate body style identifiers and `extends`-based derived symbols.
 
 ### Symbol Graphics
 
@@ -91,10 +91,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| KICAD-01 | Phase 1 | Pending |
-| KICAD-02 | Phase 1 | Pending |
-| KICAD-03 | Phase 1 | Pending |
-| KICAD-04 | Phase 1 | Pending |
+| KICAD-01 | Phase 1 | Complete |
+| KICAD-02 | Phase 1 | Complete |
+| KICAD-03 | Phase 1 | Complete |
+| KICAD-04 | Phase 1 | Complete |
 | DRAW-01 | Phase 2 | Pending |
 | DRAW-02 | Phase 2 | Pending |
 | DRAW-03 | Phase 2 | Pending |
