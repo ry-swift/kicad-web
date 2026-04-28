@@ -20,6 +20,8 @@ dist/
 dist-web/
 node_modules/
 
+MY-STM32/
+
 .planning/
 
 tests/
