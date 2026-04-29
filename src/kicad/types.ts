@@ -10,6 +10,22 @@ export interface KicadPoint {
   readonly y: number;
 }
 
+export type EditableSymbolElementRef =
+  | { readonly kind: 'graphic'; readonly id: string }
+  | { readonly kind: 'pin'; readonly id: string }
+  | { readonly kind: 'property'; readonly id: string };
+
+export interface EditableSymbolElementPatch {
+  readonly value?: string;
+  readonly pinName?: string;
+  readonly pinNumber?: string;
+  readonly electricalType?: string;
+  readonly graphicStyle?: string;
+  readonly pinLength?: number;
+  readonly strokeWidth?: number;
+  readonly hidden?: boolean;
+}
+
 export interface KicadAt extends KicadPoint {
   readonly rotation: number;
 }

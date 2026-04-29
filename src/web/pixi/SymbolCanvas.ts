@@ -1,8 +1,15 @@
-import { Application, Container, Graphics } from 'pixi.js';
+import { Application, Container, Graphics, Rectangle, type FederatedPointerEvent } from 'pixi.js';
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue';
-import type { KicadGraphicItemAst, KicadPoint, PinIR, PropertyIR, SymbolLibraryIR } from '../../kicad/index.js';
+import type {
+  EditableSymbolElementRef,
+  KicadGraphicItemAst,
+  KicadPoint,
+  PinIR,
+  PropertyIR,
+  SymbolLibraryIR
+} from '../../kicad/index.js';
 import { createSymbolLayout, pinEndPoint, pinNumberPlacement, rectangleCorners } from '../render/symbol-layout.js';
-import { drawStrokeText } from './newstroke-font.js';
+import { drawStrokeText, measureStrokeText } from './newstroke-font.js';
 
 const MAX_MM_TO_PX = 46;
 const CANVAS_BACKGROUND = '#f4f3ed';
@@ -13,9 +20,15 @@ const KICAD_RED = 0x840000;
 const KICAD_PIN_TEXT = 0xa90000;
 const KICAD_GREEN = 0x006464;
 const HIDDEN_GREY = 0xb8b8b8;
+const SELECTED_COLOR = 0x1f6feb;
 const TWO_PI = Math.PI * 2;
 
 export type SymbolCanvasMode = 'kicad-svg' | 'editor';
+
+export interface SymbolElementTranslateEvent {
+  readonly ref: EditableSymbolElementRef;
+  readonly deltaMm: KicadPoint;
+}
 
 export const SymbolCanvas = defineComponent({
   name: 'SymbolCanvas',
@@ -27,12 +40,58 @@ export const SymbolCanvas = defineComponent({
     mode: {
       type: String as PropType<SymbolCanvasMode>,
       default: 'kicad-svg'
+    },
+    selectedElementId: {
+      type: String,
+      default: ''
     }
   },
-  setup(props) {
+  emits: {
+    'select-element': (_ref: EditableSymbolElementRef) => true,
+    'translate-element': (_event: SymbolElementTranslateEvent) => true
+  },
+  setup(props, { emit }) {
     const host = ref<HTMLDivElement | null>(null);
     let app: Application | undefined;
     let resizeObserver: ResizeObserver | undefined;
+    let dragState: { ref: EditableSymbolElementRef; lastGlobal: KicadPoint } | undefined;
+
+    const handlers: InteractionHandlers = {
+      pointerDown: (ref, event) => {
+        event.stopPropagation();
+        dragState = {
+          ref,
+          lastGlobal: { x: event.global.x, y: event.global.y }
+        };
+        emit('select-element', ref);
+      },
+      pointerMove: (event, scale) => {
+        if (!dragState) {
+          return;
+        }
+
+        const nextGlobal = { x: event.global.x, y: event.global.y };
+        const deltaPx = {
+          x: nextGlobal.x - dragState.lastGlobal.x,
+          y: nextGlobal.y - dragState.lastGlobal.y
+        };
+        if (deltaPx.x === 0 && deltaPx.y === 0) {
+          return;
+        }
+
+        dragState.lastGlobal = nextGlobal;
+        emit('translate-element', {
+          ref: dragState.ref,
+          deltaMm: {
+            x: deltaPx.x / scale,
+            y: -deltaPx.y / scale
+          }
+        });
+      },
+      pointerUp: () => {
+        dragState = undefined;
+      }
+    };
 
     // PixiJS 只在组件挂载后创建真实 canvas。
     // 初始化完成后立即按当前 IR 渲染一次，后续尺寸变化或模式变化都重新从 IR 投影，避免持久化依赖舞台对象。
@@ -51,20 +110,20 @@ export const SymbolCanvas = defineComponent({
       });
 
       host.value.appendChild(app.canvas);
-      renderScene(app, props.ir, props.mode);
+      renderScene(app, props.ir, props.mode, props.selectedElementId, handlers);
       resizeObserver = new ResizeObserver(() => {
         if (app) {
-          renderScene(app, props.ir, props.mode);
+          renderScene(app, props.ir, props.mode, props.selectedElementId, handlers);
         }
       });
       resizeObserver.observe(host.value);
     });
 
     watch(
-      () => [props.ir, props.mode] as const,
+      () => [props.ir, props.mode, props.selectedElementId] as const,
       () => {
         if (app) {
-          renderScene(app, props.ir, props.mode);
+          renderScene(app, props.ir, props.mode, props.selectedElementId, handlers);
         }
       }
     );
@@ -89,10 +148,30 @@ interface RenderOptions {
   readonly referenceSuffix: boolean;
 }
 
+interface InteractionHandlers {
+  readonly pointerDown: (ref: EditableSymbolElementRef, event: FederatedPointerEvent) => void;
+  readonly pointerMove: (event: FederatedPointerEvent, scale: number) => void;
+  readonly pointerUp: () => void;
+}
+
+interface ScreenBounds {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+}
+
 // Symbol IR -> layout -> PixiJS scene：
 // 这里是 Web 端当前的最终投影层。它先清空旧舞台，再从 IR 重新生成 layout、计算缩放和坐标变换，
 // 最后按图元、pin、属性的绘制顺序创建 PixiJS Graphics/Container。业务真相仍然只在 IR 中。
-function renderScene(app: Application, ir: SymbolLibraryIR, mode: SymbolCanvasMode): void {
+function renderScene(
+  app: Application,
+  ir: SymbolLibraryIR,
+  mode: SymbolCanvasMode,
+  selectedElementId: string,
+  handlers: InteractionHandlers
+): void {
+  app.stage.removeAllListeners();
   app.stage.removeChildren();
 
   const options = renderOptions(mode);
@@ -113,22 +192,33 @@ function renderScene(app: Application, ir: SymbolLibraryIR, mode: SymbolCanvasMo
     y: height / 2 - (point.y - centerY) * scale
   });
 
+  app.stage.eventMode = options.mode === 'editor' ? 'static' : 'none';
+  app.stage.hitArea = new Rectangle(0, 0, width, height);
+  app.stage.on('globalpointermove', (event) => handlers.pointerMove(event, scale));
+  app.stage.on('pointerup', handlers.pointerUp);
+  app.stage.on('pointerupoutside', handlers.pointerUp);
+  world.eventMode = options.mode === 'editor' ? 'passive' : 'none';
+
   if (options.showGrid) {
     drawGrid(world, width, height, transform({ x: 0, y: 0 }), scale);
   }
   for (const graphic of layout.graphics) {
-    drawGraphic(world, graphic, transform, scale);
+    drawGraphic(world, graphic.graphic.ast, transform, scale);
+    registerGraphicInteraction(world, graphic.ref, graphic.graphic.ast, transform, scale, selectedElementId, handlers, options);
   }
   if (options.showHiddenProperties) {
-    for (const label of layout.labels.filter((item) => item.hidden)) {
-      drawLabel(world, label, transform, scale, options);
+    for (const label of layout.labels.filter((item) => item.property.hidden)) {
+      drawLabel(world, label.property, transform, scale, options);
+      registerLabelInteraction(world, label.ref, label.property, transform, scale, selectedElementId, handlers, options);
     }
   }
   for (const pin of layout.pins) {
-    drawPin(world, pin, transform, scale, options);
+    drawPin(world, pin.pin, transform, scale, options);
+    registerPinInteraction(world, pin.ref, pin.pin, transform, scale, selectedElementId, handlers, options);
   }
-  for (const label of layout.labels.filter((item) => !item.hidden)) {
-    drawLabel(world, label, transform, scale, options);
+  for (const label of layout.labels.filter((item) => !item.property.hidden)) {
+    drawLabel(world, label.property, transform, scale, options);
+    registerLabelInteraction(world, label.ref, label.property, transform, scale, selectedElementId, handlers, options);
   }
 
   app.stage.addChild(world);
@@ -159,6 +249,178 @@ function drawGrid(stage: Container, width: number, height: number, origin: { x: 
   grid.moveTo(origin.x, 0).lineTo(origin.x, height).moveTo(0, origin.y).lineTo(width, origin.y);
   grid.stroke({ color: AXIS_COLOR, width: 1.5, alpha: 0.85 });
   stage.addChild(grid);
+}
+
+function registerGraphicInteraction(
+  stage: Container,
+  ref: EditableSymbolElementRef,
+  graphic: KicadGraphicItemAst,
+  transform: (point: { x: number; y: number }) => { x: number; y: number },
+  scale: number,
+  selectedElementId: string,
+  handlers: InteractionHandlers,
+  options: RenderOptions
+): void {
+  if (options.mode !== 'editor') {
+    return;
+  }
+
+  const bounds = graphicScreenBounds(graphic, transform, scale);
+  if (bounds) {
+    addInteractionOverlay(stage, bounds, ref, ref.id === selectedElementId, handlers);
+  }
+}
+
+function registerPinInteraction(
+  stage: Container,
+  ref: EditableSymbolElementRef,
+  pin: PinIR,
+  transform: (point: { x: number; y: number }) => { x: number; y: number },
+  scale: number,
+  selectedElementId: string,
+  handlers: InteractionHandlers,
+  options: RenderOptions
+): void {
+  if (options.mode !== 'editor' || !pin.at || pin.length === undefined) {
+    return;
+  }
+
+  const bounds = boundsFromPoints([transform(pin.at), transform(pinEndPoint(pin.at, pin.length))], Math.max(8, 0.45 * scale));
+  addInteractionOverlay(stage, bounds, ref, ref.id === selectedElementId, handlers);
+}
+
+function registerLabelInteraction(
+  stage: Container,
+  ref: EditableSymbolElementRef,
+  property: PropertyIR,
+  transform: (point: { x: number; y: number }) => { x: number; y: number },
+  scale: number,
+  selectedElementId: string,
+  handlers: InteractionHandlers,
+  options: RenderOptions
+): void {
+  if (options.mode !== 'editor' || !property.at) {
+    return;
+  }
+
+  const point = transform(property.at);
+  const fontSize = textSize(property, scale);
+  const bounds = textScreenBounds(propertyText(property, options), point, fontSize, Math.max(8, 0.25 * scale));
+  addInteractionOverlay(stage, bounds, ref, ref.id === selectedElementId, handlers);
+}
+
+function addInteractionOverlay(
+  stage: Container,
+  bounds: ScreenBounds,
+  ref: EditableSymbolElementRef,
+  selected: boolean,
+  handlers: InteractionHandlers
+): void {
+  const normalized = normalizeScreenBounds(bounds);
+  const overlay = new Graphics()
+    .rect(normalized.x, normalized.y, normalized.width, normalized.height)
+    .fill({ color: SELECTED_COLOR, alpha: 0.001 });
+
+  if (selected) {
+    overlay
+      .rect(normalized.x, normalized.y, normalized.width, normalized.height)
+      .stroke({ color: SELECTED_COLOR, width: 2, alpha: 0.95 });
+    const handle = Math.min(9, Math.max(5, Math.min(normalized.width, normalized.height) * 0.18));
+    overlay
+      .circle(normalized.x + normalized.width, normalized.y, handle)
+      .fill({ color: SELECTED_COLOR, alpha: 0.95 });
+  }
+
+  overlay.eventMode = 'static';
+  overlay.cursor = 'move';
+  overlay.hitArea = new Rectangle(normalized.x, normalized.y, normalized.width, normalized.height);
+  overlay.on('pointerdown', (event) => handlers.pointerDown(ref, event));
+  stage.addChild(overlay);
+}
+
+function graphicScreenBounds(
+  graphic: KicadGraphicItemAst,
+  transform: (point: { x: number; y: number }) => { x: number; y: number },
+  scale: number
+): ScreenBounds | undefined {
+  switch (graphic.kind) {
+    case 'rectangle': {
+      const rect = rectangleCorners(graphic);
+      if (!rect) {
+        return undefined;
+      }
+      return boundsFromPoints([
+        transform({ x: rect.x, y: rect.y }),
+        transform({ x: rect.x + rect.width, y: rect.y + rect.height })
+      ], Math.max(6, 0.25 * scale));
+    }
+    case 'polyline':
+    case 'bezier':
+      return boundsFromPoints(graphic.points.map(transform), Math.max(6, 0.25 * scale));
+    case 'circle':
+      if (!graphic.center || graphic.radius === undefined) {
+        return undefined;
+      }
+      {
+        const center = transform(graphic.center);
+        const radius = Math.max(graphic.radius * scale, 4);
+        return { x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2 };
+      }
+    case 'arc':
+      return boundsFromPoints(
+        [graphic.start, graphic.mid, graphic.end].filter((point): point is KicadPoint => Boolean(point)).map(transform),
+        Math.max(6, 0.25 * scale)
+      );
+    case 'text':
+      if (!graphic.at) {
+        return undefined;
+      }
+      return textScreenBounds(
+        graphic.value,
+        transform(graphic.at),
+        kicadTextPx(graphic.effects?.font?.size?.y, scale),
+        Math.max(8, 0.25 * scale)
+      );
+  }
+}
+
+function boundsFromPoints(points: readonly { x: number; y: number }[], padding: number): ScreenBounds {
+  if (points.length === 0) {
+    return { x: 0, y: 0, width: 0, height: 0 };
+  }
+
+  const minX = Math.min(...points.map((point) => point.x));
+  const minY = Math.min(...points.map((point) => point.y));
+  const maxX = Math.max(...points.map((point) => point.x));
+  const maxY = Math.max(...points.map((point) => point.y));
+  return {
+    x: minX - padding,
+    y: minY - padding,
+    width: maxX - minX + padding * 2,
+    height: maxY - minY + padding * 2
+  };
+}
+
+function textScreenBounds(text: string, point: { x: number; y: number }, fontSize: number, padding: number): ScreenBounds {
+  const metrics = measureStrokeText(text, fontSize);
+  return {
+    x: point.x - metrics.width / 2 - padding,
+    y: point.y - metrics.height / 2 - padding,
+    width: metrics.width + padding * 2,
+    height: metrics.height + padding * 2
+  };
+}
+
+function normalizeScreenBounds(bounds: ScreenBounds): ScreenBounds {
+  const minSize = 10;
+  const width = Math.max(bounds.width, minSize);
+  const height = Math.max(bounds.height, minSize);
+  return {
+    x: bounds.x - (width - bounds.width) / 2,
+    y: bounds.y - (height - bounds.height) / 2,
+    width,
+    height
+  };
 }
 
 // 分派不同 KiCad 图元到对应绘制函数。
@@ -532,14 +794,30 @@ function clampColor(value: number): number {
 
 function electricalTypeLabel(type: string): string {
   switch (type) {
+    case 'input':
+      return '输入';
+    case 'bidirectional':
+      return '双向';
+    case 'tri_state':
+      return '三态';
     case 'passive':
       return '无源';
     case 'power_in':
       return '电源输入';
+    case 'power_out':
+      return '电源输出';
     case 'output':
       return '输出';
+    case 'open_collector':
+      return '开集电极';
+    case 'open_emitter':
+      return '开射极';
     case 'no_connect':
       return '未连接';
+    case 'unspecified':
+      return '未指定';
+    case 'free':
+      return '自由';
     default:
       return type;
   }

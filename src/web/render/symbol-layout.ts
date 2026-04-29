@@ -1,5 +1,7 @@
 import type {
   CircleAst,
+  EditableSymbolElementRef,
+  GraphicItemIR,
   KicadAt,
   KicadGraphicItemAst,
   KicadPoint,
@@ -10,11 +12,26 @@ import type {
   SymbolLibraryIR
 } from '../../kicad/index.js';
 
+export interface SymbolGraphicLayoutItem {
+  readonly ref: Extract<EditableSymbolElementRef, { readonly kind: 'graphic' }>;
+  readonly graphic: GraphicItemIR;
+}
+
+export interface SymbolPinLayoutItem {
+  readonly ref: Extract<EditableSymbolElementRef, { readonly kind: 'pin' }>;
+  readonly pin: PinIR;
+}
+
+export interface SymbolPropertyLayoutItem {
+  readonly ref: Extract<EditableSymbolElementRef, { readonly kind: 'property' }>;
+  readonly property: PropertyIR;
+}
+
 export interface SymbolRenderLayout {
   readonly symbol: SymbolIR;
-  readonly graphics: readonly KicadGraphicItemAst[];
-  readonly pins: readonly PinIR[];
-  readonly labels: readonly PropertyIR[];
+  readonly graphics: readonly SymbolGraphicLayoutItem[];
+  readonly pins: readonly SymbolPinLayoutItem[];
+  readonly labels: readonly SymbolPropertyLayoutItem[];
   readonly bounds: {
     readonly minX: number;
     readonly minY: number;
@@ -43,10 +60,27 @@ export function createSymbolLayout(library: SymbolLibraryIR): SymbolRenderLayout
     throw new Error('Symbol IR library is empty');
   }
 
-  const graphics = symbol.units.flatMap((unit) => unit.graphics.map((item) => item.ast));
-  const pins = symbol.units.flatMap((unit) => unit.pins);
-  const labels = symbol.properties;
-  const bounds = collectBounds(graphics, pins, labels);
+  const graphics = symbol.units.flatMap((unit) =>
+    unit.graphics.map((graphic): SymbolGraphicLayoutItem => ({
+      ref: { kind: 'graphic', id: graphic.id },
+      graphic
+    }))
+  );
+  const pins = symbol.units.flatMap((unit) =>
+    unit.pins.map((pin): SymbolPinLayoutItem => ({
+      ref: { kind: 'pin', id: pin.id },
+      pin
+    }))
+  );
+  const labels = symbol.properties.map((property): SymbolPropertyLayoutItem => ({
+    ref: { kind: 'property', id: property.id },
+    property
+  }));
+  const bounds = collectBounds(
+    graphics.map((item) => item.graphic.ast),
+    pins.map((item) => item.pin),
+    labels.map((item) => item.property)
+  );
 
   return {
     symbol,

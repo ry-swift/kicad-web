@@ -221,6 +221,79 @@ h1 {
   overflow-wrap: anywhere;
 }
 
+.selected-element {
+  background: #fafbf5;
+  border-left: 2px solid #1f6feb;
+  color: #33424c;
+  font: 600 12px/1.45 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  margin: 0 0 24px;
+  overflow-wrap: anywhere;
+  padding: 10px 12px;
+}
+
+.element-editor {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 24px;
+}
+
+.editor-field {
+  display: grid;
+  gap: 6px;
+
+  span {
+    color: #5f6f78;
+    font-size: 12px;
+  }
+
+  input,
+  select {
+    appearance: none;
+    background: #fafbf5;
+    border: 1px solid #9ca8aa;
+    color: #18242b;
+    min-height: 34px;
+    padding: 8px 9px;
+    width: 100%;
+  }
+
+  input:disabled {
+    color: #607077;
+    background: #e8eae4;
+  }
+
+  input:focus-visible,
+  select:focus-visible {
+    border-color: #1f6feb;
+    outline: 2px solid rgb(31 111 235 / 18%);
+    outline-offset: 0;
+  }
+}
+
+.editor-check {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  color: #33424c;
+  font-size: 13px;
+
+  input {
+    accent-color: #1f6feb;
+    block-size: 16px;
+    inline-size: 16px;
+  }
+}
+
+.editor-empty {
+  background: #fafbf5;
+  border-left: 2px solid #9ca8aa;
+  color: #607077;
+  font-size: 13px;
+  line-height: 1.45;
+  margin: 0 0 24px;
+  padding: 10px 12px;
+}
+
 .note {
   color: #4f5f68;
   font-size: 13px;
