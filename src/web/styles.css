@@ -107,6 +107,38 @@ h1 {
   color: #f9faf4;
 }
 
+.toolbar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.export-button {
+  appearance: none;
+  border: 1px solid #2f3d49;
+  background: #006f6a;
+  color: #f9faf4;
+  cursor: pointer;
+  font: 800 12px/1 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  min-height: 31px;
+  padding: 8px 12px;
+}
+
+.export-button:hover,
+.export-button:focus-visible {
+  background: #005954;
+}
+
+.export-status {
+  color: #42525d;
+  flex-basis: 100%;
+  font: 600 11px/1.3 ui-monospace, "SFMono-Regular", Menlo, monospace;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
 .symbol-canvas {
   width: 100%;
   height: 100%;
@@ -217,5 +249,13 @@ h1 {
 
   .status-strip {
     justify-content: flex-start;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .export-status {
+    text-align: left;
   }
 }
