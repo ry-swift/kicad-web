@@ -23,6 +23,20 @@ export interface SymbolRenderLayout {
   };
 }
 
+export interface PinNumberPlacement {
+  readonly x: number;
+  readonly y: number;
+  readonly anchor: {
+    readonly x: number;
+    readonly y: number;
+  };
+}
+
+const PIN_NUMBER_LINE_CLEARANCE_MM = 0.45;
+
+// IR -> renderer layout：
+// 这一层只整理渲染输入，把当前 symbol 的 unit 图元、pin 和可显示属性汇总出来，
+// 并计算后续 viewport 变换所需的 KiCad 世界坐标边界；它不修改 IR，也不创建 PixiJS 对象。
 export function createSymbolLayout(library: SymbolLibraryIR): SymbolRenderLayout {
   const symbol = library.symbols[0];
   if (!symbol) {
@@ -43,6 +57,8 @@ export function createSymbolLayout(library: SymbolLibraryIR): SymbolRenderLayout
   };
 }
 
+// bounds 仍然使用 KiCad 的 mm 世界坐标。
+// PixiJS/SVG 渲染器可以基于同一份 bounds 分别做 mm -> px、Y 轴翻转和居中缩放。
 function collectBounds(
   graphics: readonly KicadGraphicItemAst[],
   pins: readonly PinIR[],
@@ -97,11 +113,40 @@ function collectBounds(
   };
 }
 
+// KiCad pin 的 `at` 是连接点，`length` 沿旋转方向延伸；这里统一计算 pin 的另一端，
+// 避免各个 renderer 自己重复实现而产生细微差异。
 export function pinEndPoint(at: KicadAt, length: number): KicadPoint {
   const radians = (at.rotation * Math.PI) / 180;
   return {
     x: at.x + Math.cos(radians) * length,
     y: at.y + Math.sin(radians) * length
+  };
+}
+
+export function pinNumberPlacement(
+  start: KicadPoint,
+  end: KicadPoint,
+  scale: number
+): PinNumberPlacement {
+  const midpoint = {
+    x: (start.x + end.x) / 2,
+    y: (start.y + end.y) / 2
+  };
+
+  const horizontalPin = Math.abs(start.x - end.x) >= Math.abs(start.y - end.y);
+  if (horizontalPin) {
+    return {
+      x: midpoint.x,
+      y: midpoint.y - PIN_NUMBER_LINE_CLEARANCE_MM * scale,
+      anchor: { x: 0.5, y: 1 }
+    };
+  }
+
+  const rightSide = end.x >= start.x;
+  return {
+    x: midpoint.x + (rightSide ? -PIN_NUMBER_LINE_CLEARANCE_MM : PIN_NUMBER_LINE_CLEARANCE_MM) * scale,
+    y: midpoint.y,
+    anchor: { x: rightSide ? 1 : 0, y: 0.5 }
   };
 }
 

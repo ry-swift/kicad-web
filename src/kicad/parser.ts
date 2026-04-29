@@ -53,6 +53,8 @@ const PROPERTY_KNOWN = new Set(['at', 'show_name', 'do_not_autoplace', 'hide', '
 const GRAPHIC_KNOWN = new Set(['start', 'end', 'pts', 'center', 'radius', 'mid', 'stroke', 'fill', 'at', 'effects']);
 const PIN_KNOWN = new Set(['at', 'length', 'hide', 'name', 'number']);
 
+// 文件级转换入口：原始 `.kicad_sym` 文本先进入通用 S-expression parser，
+// 得到只理解括号/atom/字符串的 CST；随后再交给 KiCad 语义层校验根节点和字段含义。
 export function parseKicadSymbolLibrary(input: string): KicadSymbolLibrary {
   const document = parseSExprDocument(input);
   if (document.expressions.length !== 1 || !isList(document.expressions[0])) {
@@ -61,6 +63,9 @@ export function parseKicadSymbolLibrary(input: string): KicadSymbolLibrary {
   return parseKicadSymbolLibraryCst(document.expressions[0]);
 }
 
+// CST -> KiCad Symbol AST：
+// 这里开始识别 KiCad 文件格式本身的业务语义，例如库版本、生成器和多个 symbol。
+// `source` 和 `unknownEntries` 会被保留下来，保证暂未理解的新字段不会在回写时被静默丢弃。
 export function parseKicadSymbolLibraryCst(root: SExprList): KicadSymbolLibrary {
   if (listHead(root) !== 'kicad_symbol_lib') {
     throw new SExprParseError('Root list must be kicad_symbol_lib', root.span.start);
@@ -98,6 +103,8 @@ export function parseKicadSymbolLibraryCst(root: SExprList): KicadSymbolLibrary 
   });
 }
 
+// symbol 是 KiCad 符号库的核心业务实体：
+// 顶层字段描述器件属性和显示策略，嵌套的 `symbol` 节点通常承载具体 unit 的图元和引脚。
 function parseSymbol(list: SExprList): KicadSymbolAst {
   const name = atomValue(list.items[1]);
   if (!name) {
@@ -187,6 +194,8 @@ function parseSymbol(list: SExprList): KicadSymbolAst {
   });
 }
 
+// unit 层只收集可绘制图元和 pin，不重复承载库级/符号级配置。
+// 后续 IR 会把顶层图元也规范化成 unit，方便 renderer 使用统一路径遍历。
 function parseSymbolUnit(list: SExprList): KicadSymbolUnitAst {
   const name = atomValue(list.items[1]);
   if (!name) {
@@ -244,6 +253,8 @@ function parseProperty(list: SExprList): KicadPropertyAst {
   });
 }
 
+// 图元解析只把 KiCad 几何和样式字段转成强类型 AST。
+// 坐标换算、视口缩放、Y 轴翻转属于 renderer/layout 层，不能在 parser 中提前混入。
 function parseGraphic(list: SExprList): KicadGraphicItemAst {
   const kind = listHead(list);
   const strokeList = firstChildList(list, 'stroke');
@@ -306,6 +317,8 @@ function parseGraphic(list: SExprList): KicadGraphicItemAst {
   }
 }
 
+// pin 的 KiCad 语义由连接点 `at`、长度、旋转角、电气类型和编号/名称共同决定。
+// 这里保留原始 mm 坐标；实际 pin 终点由布局层通过 `pinEndPoint` 统一计算。
 function parsePin(list: SExprList): KicadPinAst {
   const electricalType = atomValue(list.items[1]);
   const graphicStyle = atomValue(list.items[2]);

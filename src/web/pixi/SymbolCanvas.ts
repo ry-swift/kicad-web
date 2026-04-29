@@ -1,7 +1,7 @@
 import { Application, Container, Graphics } from 'pixi.js';
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch, type PropType } from 'vue';
 import type { KicadGraphicItemAst, KicadPoint, PinIR, PropertyIR, SymbolLibraryIR } from '../../kicad/index.js';
-import { createSymbolLayout, pinEndPoint, rectangleCorners } from '../render/symbol-layout.js';
+import { createSymbolLayout, pinEndPoint, pinNumberPlacement, rectangleCorners } from '../render/symbol-layout.js';
 import { drawStrokeText } from './newstroke-font.js';
 
 const MAX_MM_TO_PX = 46;
@@ -34,6 +34,8 @@ export const SymbolCanvas = defineComponent({
     let app: Application | undefined;
     let resizeObserver: ResizeObserver | undefined;
 
+    // PixiJS 只在组件挂载后创建真实 canvas。
+    // 初始化完成后立即按当前 IR 渲染一次，后续尺寸变化或模式变化都重新从 IR 投影，避免持久化依赖舞台对象。
     onMounted(async () => {
       if (!host.value) {
         return;
@@ -87,6 +89,9 @@ interface RenderOptions {
   readonly referenceSuffix: boolean;
 }
 
+// Symbol IR -> layout -> PixiJS scene：
+// 这里是 Web 端当前的最终投影层。它先清空旧舞台，再从 IR 重新生成 layout、计算缩放和坐标变换，
+// 最后按图元、pin、属性的绘制顺序创建 PixiJS Graphics/Container。业务真相仍然只在 IR 中。
 function renderScene(app: Application, ir: SymbolLibraryIR, mode: SymbolCanvasMode): void {
   app.stage.removeChildren();
 
@@ -101,6 +106,8 @@ function renderScene(app: Application, ir: SymbolLibraryIR, mode: SymbolCanvasMo
   const scale = Math.min((width - padding * 2) / boundsWidth, (height - padding * 2) / boundsHeight, MAX_MM_TO_PX);
   const centerX = (layout.bounds.minX + layout.bounds.maxX) / 2;
   const centerY = (layout.bounds.minY + layout.bounds.maxY) / 2;
+  // KiCad 使用 mm 世界坐标，Canvas/PixiJS 使用屏幕像素坐标：
+  // X 轴保持向右，Y 轴在屏幕空间翻转，并按 bounds 居中后统一缩放。
   const transform = (point: { x: number; y: number }) => ({
     x: width / 2 + (point.x - centerX) * scale,
     y: height / 2 - (point.y - centerY) * scale
@@ -127,6 +134,8 @@ function renderScene(app: Application, ir: SymbolLibraryIR, mode: SymbolCanvasMo
   app.stage.addChild(world);
 }
 
+// 两种显示模式只影响投影细节：
+// `kicad-svg` 尽量接近 KiCad 导出外观，`editor` 增加网格、隐藏项和电气类型等编辑辅助信息。
 function renderOptions(mode: SymbolCanvasMode): RenderOptions {
   return {
     mode,
@@ -152,6 +161,8 @@ function drawGrid(stage: Container, width: number, height: number, origin: { x: 
   stage.addChild(grid);
 }
 
+// 分派不同 KiCad 图元到对应绘制函数。
+// 注意这里消费的是 AST/IR 派生出的几何语义，不反向修改 symbol 数据。
 function drawGraphic(
   stage: Container,
   graphic: KicadGraphicItemAst,
@@ -281,6 +292,8 @@ function drawBezier(
   stage.addChild(curve);
 }
 
+// KiCad arc 用 start/mid/end 三点表达；PixiJS arc 需要圆心、半径和起止角。
+// 三点共线时无法稳定求圆，降级为折线以保证画面可解释且不中断渲染。
 function drawArc(
   stage: Container,
   graphic: Extract<KicadGraphicItemAst, { kind: 'arc' }>,
@@ -336,6 +349,8 @@ function drawGraphicText(
   });
 }
 
+// pin 从连接点画到 pinEndPoint。不同模式下可以额外显示端点圆、电气类型和隐藏 pin 灰显，
+// 但这些都只是编辑器可视化辅助，不会写回 IR。
 function drawPin(
   stage: Container,
   pin: PinIR,
@@ -399,7 +414,7 @@ function drawPinNumber(
   const textColor = options.hiddenPinsGrey && pin.hidden ? HIDDEN_GREY : KICAD_PIN_TEXT;
   const fontSize = kicadTextPx(pin.numberEffects?.font?.size?.y, scale);
   const alpha = options.hiddenPinsGrey && pin.hidden ? 0.78 : 1;
-  const placement = pinNumberPlacement(start, end, scale, options);
+  const placement = pinNumberPlacement(start, end, scale);
   drawStrokeText(stage, {
     text: pin.number,
     x: placement.x,
@@ -410,42 +425,6 @@ function drawPinNumber(
     anchor: placement.anchor,
     lineWidth: strokeTextWidth(fontSize, scale)
   });
-}
-
-function pinNumberPlacement(
-  start: { x: number; y: number },
-  end: { x: number; y: number },
-  scale: number,
-  options: RenderOptions
-): { x: number; y: number; anchor: { x: number; y: number } } {
-  const midpoint = {
-    x: (start.x + end.x) / 2,
-    y: (start.y + end.y) / 2
-  };
-
-  if (options.mode !== 'editor') {
-    return {
-      x: midpoint.x,
-      y: midpoint.y - 0.2 * scale,
-      anchor: { x: 0.5, y: 1 }
-    };
-  }
-
-  const horizontalPin = Math.abs(start.x - end.x) >= Math.abs(start.y - end.y);
-  if (horizontalPin) {
-    return {
-      x: midpoint.x,
-      y: midpoint.y - 0.18 * scale,
-      anchor: { x: 0.5, y: 1 }
-    };
-  }
-
-  const rightSide = end.x >= start.x;
-  return {
-    x: midpoint.x + (rightSide ? -0.18 : 0.18) * scale,
-    y: midpoint.y,
-    anchor: { x: rightSide ? 1 : 0, y: 0.5 }
-  };
 }
 
 function drawPinTypeLabel(stage: Container, pin: PinIR, start: { x: number; y: number }, scale: number): void {

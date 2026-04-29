@@ -23,6 +23,8 @@ export interface SExprList {
   readonly kind: 'list';
   readonly items: SExprNode[];
   span: SourceSpan;
+  // 仅顶层表达式保留完整输入文本，供未编辑内容按原文件排版无损导出。
+  readonly sourceText?: string;
 }
 
 export type SExprNode = SExprAtom | SExprList;

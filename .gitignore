@@ -1,8 +1,21 @@
 # macOS
 .DS_Store
+._*
+.AppleDouble
+.LSOverride
+Icon
+Thumbs.db
+Desktop.ini
 
 # oh-my-codex 本地运行状态
 .omx/
+
+# 编辑器与本地工作区配置
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
 
 # KiCad 本地状态和临时文件
 *.kicad_prl
@@ -10,23 +23,76 @@
 *.bak
 *-backups/
 .history/
+fp-info-cache
+*-cache.lib
+*-cache.dcm
+*.kicad_sch-bak
+*.kicad_pcb-bak
 
 # 通用临时目录
 tmp/
 temp/
+.tmp/
+.temp/
 
 # 构建产物
 dist/
 dist-web/
+build/
+out/
+
+# 依赖、包管理器和工具缓存
 node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+.vite/
+.vitest/
+.cache/
+.turbo/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
 
 MY-STM32/
 
 .planning/
+docs/
 
+# 测试源码、快照、覆盖率和测试报告
 tests/
-
+test/
+__tests__/
 **/tests/**
 **/test/**
+**/__tests__/**
 *.spec.*
 *.test.*
+*.e2e.*
+*.bench.*
+*.benchmark.*
+*.snap
+__snapshots__/
+.snapshots/
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+vitest-*.json
+
+# 日志文件
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# 本地环境变量和敏感配置
+.env
+.env.*
+!.env.example
+
+# 文档和演示稿编辑临时文件
+~$*
+.~*

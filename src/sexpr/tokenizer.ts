@@ -19,6 +19,8 @@ export interface SExprToken {
 
 const NUMBER_PATTERN = /^[+-]?(?:(?:\d+\.\d*)|(?:\d*\.\d+)|(?:\d+))(?:[eE][+-]?\d+)?$/;
 
+// 转换流程第一层：把原始 `.kicad_sym` 文本拆成括号和 atom token。
+// 这一层只处理通用 S-expression 语法、转义和资源上限，不理解 KiCad 的 symbol/pin/graphic 语义。
 export function tokenizeSExpr(input: string, options: SExprParseOptions = {}): SExprToken[] {
   const limits = { ...DEFAULT_SEXPR_PARSE_OPTIONS, ...options };
   const byteLength = new TextEncoder().encode(input).length;

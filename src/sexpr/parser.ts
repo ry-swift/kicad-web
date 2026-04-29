@@ -9,6 +9,8 @@ import {
   type SExprParseOptions
 } from './types.js';
 
+// 转换流程第二层：把 token 流组装成 CST。
+// CST 保留 atom 的 raw 文本和 source span，后续 KiCad parser 才会解释这些 list 的领域含义。
 export function parseSExprDocument(input: string, options: SExprParseOptions = {}): SExprDocument {
   const limits = { ...DEFAULT_SEXPR_PARSE_OPTIONS, ...options };
   const tokens = tokenizeSExpr(input, limits);
@@ -20,7 +22,8 @@ export function parseSExprDocument(input: string, options: SExprParseOptions = {
       const list: SExprList = {
         kind: 'list',
         items: [],
-        span: { start: token.span.start, end: token.span.end }
+        span: { start: token.span.start, end: token.span.end },
+        ...(stack.length === 0 ? { sourceText: input } : {})
       };
       appendNode(stack, expressions, list);
       stack.push(list);
