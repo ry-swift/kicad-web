@@ -369,7 +369,7 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
     s.rect(7.9, 4.9, 3.45, 0.18, PALETTE["kicad"])
     s.text(0.75, 0.72, 5.9, 0.35, "实现原理详解", 16, PALETTE["gold"], True)
     s.text(0.72, 1.28, 6.35, 1.15, "KiCad 符号\nWeb 端渲染", 43, PALETTE["white"], True, line_spacing=0.92)
-    s.text(0.78, 3.0, 5.5, 0.55, "从 .kicad_sym S-expression 到统一 IR、SVG 基准、PixiJS 交互投影和可回写导出", 16.5, "D9E0DC")
+    s.text(0.78, 3.0, 6.35, 0.72, "从 .kicad_sym S-expression 到统一 IR、SVG 基准、\nPixiJS 交互投影和可回写导出", 15.8, "D9E0DC")
     add_chip(s, 0.8, 4.0, "TypeScript IR", PALETTE["pcb"], 1.75)
     add_chip(s, 2.75, 4.0, "SVG 基准", PALETTE["kicad"], 1.35)
     add_chip(s, 4.3, 4.0, "PixiJS 投影", PALETTE["silicon"], 1.62)
@@ -439,12 +439,12 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
             s.line(x + 1.25, y + 0.36, nodes[i + 1][0], y + 0.36, PALETTE["grid"], 1.2)
     s.line(7.75, 2.27, 7.75, 4.9, PALETTE["pcb"], 1.5)
     add_pipeline_node(s, 5.9, 4.55, 1.4, "SVG", "黄金基准", "D8E4F4", PALETTE["silicon"])
-    add_pipeline_node(s, 7.05, 5.45, 1.55, "Editor", "IR 命令", "D8ECE4", PALETTE["pcb"])
-    add_pipeline_node(s, 8.85, 4.55, 1.55, "Exporter", "AST/CST 回写", "F4E0D4", PALETTE["copper"])
+    add_pipeline_node(s, 7.05, 5.45, 1.55, "Editor", "拖拽 / Inspector", "D8ECE4", PALETTE["pcb"])
+    add_pipeline_node(s, 8.85, 4.55, 1.55, "Exporter", "物化 AST/CST", "F4E0D4", PALETTE["copper"])
     s.line(7.75, 2.27, 6.6, 4.55, PALETTE["grid"], 1.1)
     s.line(7.75, 2.27, 7.82, 5.45, PALETTE["grid"], 1.1)
     s.line(7.75, 2.27, 9.62, 4.55, PALETTE["grid"], 1.1)
-    s.text(0.95, 3.55, 3.8, 1.1, "关键思想：只允许数据从文件语义流入 IR，再由 IR 派生各种投影。SVG、PixiJS、DOM 或 X6 都不能反向成为业务数据源。", 14.8, PALETTE["ink"], True)
+    s.text(0.95, 3.55, 3.8, 1.1, "关键思想：只允许数据从文件语义流入 IR，再由 IR 派生渲染、编辑和导出。SVG、PixiJS、DOM 或 X6 都不能反向成为业务数据源。", 14.8, PALETTE["ink"], True)
     s.footer(4)
 
     # 05 分层职责。
@@ -456,12 +456,12 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
         ["Tokenizer", "src/sexpr/tokenizer.ts", "识别括号、字符串、数字、符号，处理资源上限", "不理解 KiCad 语义"],
         ["Parser / Printer", "src/sexpr/parser.ts", "生成 CST，保留 raw atom 和 source span", "不做布局或单位换算"],
         ["KiCad AST", "src/kicad/parser.ts", "映射 symbol、property、graphic、pin、effects", "不依赖 DOM 或 PixiJS"],
-        ["Symbol IR", "src/kicad/ir.ts", "稳定 ID、unit 规范化、renderer 无关模型", "不存渲染器状态"],
-        ["Layout", "src/web/render/symbol-layout.ts", "汇总图元、pin、标签和 bounds", "不修改 IR"],
-        ["PixiJS", "src/web/pixi/SymbolCanvas.ts", "投影场景图、stroke text、编辑辅助层", "不成为持久化模型"],
+        ["Symbol IR", "src/kicad/ir.ts", "稳定 ID、编辑命令、renderer 无关模型", "不存渲染器状态"],
+        ["Layout", "src/web/render/symbol-layout.ts", "汇总图元、pin、标签、ref 和 bounds", "不修改 IR"],
+        ["PixiJS", "SymbolCanvas.ts / App.vue", "场景投影、命中热区、Inspector、导出", "不成为持久化模型"],
     ]
     add_manual_table(s, 0.55, 1.35, [1.4, 2.55, 4.5, 3.4], [0.45] + [0.66] * 6, table, PALETTE["ink"])
-    s.text(0.78, 6.45, 11.8, 0.28, "这种边界让后续 SVG renderer、PixiJS renderer、Web editor 和 exporter 可以共享 IR，又互不污染职责。", 13.8, PALETTE["ink"], True, align="center")
+    s.text(0.78, 6.45, 11.8, 0.28, "这种边界让 SVG renderer、PixiJS renderer、Web editor 和 exporter 可以共享 IR，又互不污染职责。", 13.8, PALETTE["ink"], True, align="center")
     s.footer(5)
 
     # 06 S-expression 解析。
@@ -547,10 +547,10 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
         s.text(0.92, y, 5.5, 0.18, text, 10.4, PALETTE["ink"], mono=True)
     s.line(6.6, 1.35, 6.6, 5.75, PALETTE["grid"], 1.1)
     principles = [
-        ("稳定 ID", "选中态、hover、测试断言、SVG 和 PixiJS 都能定位同一对象。"),
+        ("稳定 ID", "选中态、拖拽、测试断言、SVG 和 PixiJS 都能定位同一对象。"),
         ("unit 规范化", "顶层图元也提升为虚拟 unit，renderer 只遍历一套结构。"),
         ("renderer 无关", "IR 不保存 PixiJS DisplayObject、SVG 节点或 DOM 状态。"),
-        ("语义可回写", "编辑命令改 IR，再经 validator 和 serializer 输出 KiCad 文件。"),
+        ("语义可回写", "编辑命令改 IR，再物化回 AST/CST 并序列化为 KiCad 文件。"),
     ]
     for idx, (head, body) in enumerate(principles):
         y = 1.52 + idx * 0.95
@@ -616,12 +616,12 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
     # 11 PixiJS 投影。
     s = SlideBuilder(prs, SlideMeta("PixiJS 投影"))
     slides.append(s)
-    s.title("PixiJS 负责高性能交互投影，仍然只读 Symbol IR")
+    s.title("PixiJS 负责交互投影，业务状态仍然只在 Symbol IR")
     stages = [
         ("Vue 组件挂载", "创建 Pixi Application"),
         ("IR 变化或尺寸变化", "重新生成 layout"),
         ("清空 stage", "从 IR 再投影一次"),
-        ("绘制顺序", "grid -> graphic -> pin -> label"),
+        ("绘制 + 命中", "graphic / pin / label\n+ overlay"),
     ]
     for idx, (head, body) in enumerate(stages):
         x = 0.9 + idx * 2.95
@@ -634,8 +634,8 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
     s.rect(1.2, 4.15, 4.9, 1.05, PALETTE["soft_blue"], PALETTE["silicon"], 1.0, rounded=True)
     s.text(1.45, 4.45, 4.4, 0.22, "kicad-svg 模式：更接近 KiCad 导出预览", 13.2, PALETTE["silicon"], True, align="center")
     s.rect(7.15, 4.15, 4.9, 1.05, PALETTE["soft_green"], PALETTE["pcb"], 1.0, rounded=True)
-    s.text(7.4, 4.45, 4.4, 0.22, "editor 模式：网格、隐藏项、端点、电气类型", 13.2, PALETTE["pcb"], True, align="center")
-    s.text(1.35, 5.85, 10.7, 0.28, "模式差异属于显示策略，不允许写回 IR，也不改变 KiCad 文件语义。", 15, PALETTE["kicad"], True, align="center")
+    s.text(7.4, 4.45, 4.4, 0.22, "editor 模式：网格、隐藏项、电气类型、拖拽热区", 13.2, PALETTE["pcb"], True, align="center")
+    s.text(1.35, 5.85, 10.7, 0.28, "模式差异和命中热区都属于显示策略；拖拽只上报 ref + deltaMm，由 Vue 调用 IR 命令更新业务状态。", 15, PALETTE["kicad"], True, align="center")
     s.footer(11)
 
     # 12 SVG 与 PixiJS 双渲染。
@@ -647,22 +647,22 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
     branches = [
         (1.05, 3.28, "SVG 精确渲染器", "确定性输出、结构快照、KiCad CLI 黄金基准", PALETTE["silicon"]),
         (5.15, 3.28, "PixiJS 交互投影", "缩放、平移、选中、hover、缓存和批量实例性能", PALETTE["pcb"]),
-        (9.25, 3.28, "Exporter / Editor", "命令修改 IR，导出 `.kicad_sym` 前做 validator", PALETTE["copper"]),
+        (9.25, 3.28, "Exporter / Editor", "命令修改 IR，物化 AST/CST 后导出 `.kicad_sym`", PALETTE["copper"]),
     ]
     for x, y, head, body, color in branches:
         s.line(6.68, 2.32, x + 1.45, y, PALETTE["grid"], 1.3)
         s.rect(x, y, 3.0, 1.42, "FFFFFF", color, 1.2, rounded=True)
         s.text(x + 0.22, y + 0.22, 2.55, 0.22, head, 13.3, color, True, align="center")
         s.text(x + 0.22, y + 0.62, 2.55, 0.4, body, 10.6, PALETTE["muted"], align="center")
-    s.text(0.95, 6.0, 11.3, 0.48, "收益：解析只做一次，编辑只改 IR，导出只从 IR/AST/CST 派生，测试能精确定位是解析问题、SVG 投影问题还是 PixiJS 投影问题。", 14.3, PALETTE["ink"], True, align="center")
+    s.text(0.95, 6.0, 11.3, 0.48, "收益：解析只做一次，编辑只改 IR，导出只从 IR/AST/CST 派生，测试能精确定位是解析问题、编辑物化问题还是渲染投影问题。", 14.3, PALETTE["ink"], True, align="center")
     s.footer(12)
 
     # 13 导出与 round-trip。
     s = SlideBuilder(prs, SlideMeta("导出闭环"))
     slides.append(s)
-    s.title("导出闭环：当前先保证未修改输入可安全 round-trip")
+    s.title("导出闭环：编辑后的 IR 已可物化回 .kicad_sym")
     chain = [
-        ("IR", "业务变更源头", PALETTE["pcb"]),
+        ("IR", "编辑后的唯一真相", PALETTE["pcb"]),
         ("AST", "KiCad 语义树", PALETTE["silicon"]),
         ("CST", "顺序 / raw / span", PALETTE["copper"]),
         (".kicad_sym", "KiCad 可打开", PALETTE["kicad"]),
@@ -675,11 +675,11 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
         if idx < 3:
             s.line(x + 2.05, 2.12, x + 2.82, 2.12, PALETTE["grid"], 1.4)
     s.rect(0.95, 3.35, 5.35, 1.6, PALETTE["soft_green"], PALETTE["pcb"], 1.0, rounded=True)
-    s.text(1.25, 3.78, 4.75, 0.22, "当前 serializer 基于解析时保留的 CST source 打印", 13.4, PALETTE["pcb"], True, align="center")
-    s.text(1.3, 4.25, 4.65, 0.26, "目标：未知 KiCad 字段不因当前版本暂不理解而丢失。", 11.5, PALETTE["ink"], align="center")
+    s.text(1.25, 3.78, 4.75, 0.22, "当前 materialize 会克隆原始 CST，再同步受支持字段", 13.4, PALETTE["pcb"], True, align="center")
+    s.text(1.3, 4.25, 4.65, 0.26, "覆盖：坐标、文本、线宽、类型、长度、隐藏。", 11.5, PALETTE["ink"], align="center")
     s.rect(7.05, 3.35, 5.1, 1.6, PALETTE["soft_red"], PALETTE["kicad"], 1.0, rounded=True)
-    s.text(7.35, 3.78, 4.55, 0.22, "后续 Web 编辑必须经过导出 guardrail", 13.4, PALETTE["kicad"], True, align="center")
-    s.text(7.4, 4.25, 4.45, 0.26, "KiCad 无法表达的图元或样式，导出前阻断或显式降级确认。", 11.5, PALETTE["ink"], align="center")
+    s.text(7.35, 3.78, 4.55, 0.22, "导出 guardrail 仍需覆盖更复杂编辑", 13.4, PALETTE["kicad"], True, align="center")
+    s.text(7.4, 4.25, 4.45, 0.26, "复杂编辑后续统一进入导出 guardrail。", 11.5, PALETTE["ink"], align="center")
     s.footer(13)
 
     # 14 安全与兼容边界。
@@ -703,7 +703,7 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
     slides.append(s)
     s.title("验证体系：从结构正确到视觉一致，再到 KiCad 自身校验")
     gates = [
-        ("当前", "Vitest", "S-expression、转义、异常输入、TLP250 AST/IR、稳定 ID、round-trip、未知字段保留", PALETTE["pcb"]),
+        ("当前", "Vitest", "解析/打印、异常输入、TLP250 AST/IR、稳定 ID、round-trip、未知字段、拖拽与 Inspector 导出", PALETTE["pcb"]),
         ("Phase 2", "SVG 快照", "同一 IR 输出稳定 SVG，结构变化可审查", PALETTE["silicon"]),
         ("Phase 3", "KiCad CLI", "kicad-cli sym export svg 生成黄金基准", PALETTE["copper"]),
         ("Phase 4", "浏览器视觉回归", "Playwright 截图或 raster diff 验证 PixiJS 追随 SVG 基准", PALETTE["kicad"]),
@@ -717,14 +717,14 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
         if idx < 3:
             s.line(1.14, y + 0.48, 1.14, y + 1.13, PALETTE["grid"], 1.2)
     s.rect(8.8, 5.75, 2.5, 0.55, PALETTE["ink"], rounded=True)
-    s.text(9.05, 5.95, 2.0, 0.13, "验证即兼容性契约", 9.5, PALETTE["white"], True, align="center")
+    s.text(9.05, 5.95, 2.0, 0.13, "测试即互操作契约", 9.5, PALETTE["white"], True, align="center")
     s.footer(15)
 
     # 16 当前实现状态。
     s = SlideBuilder(prs, SlideMeta("当前实现"))
     slides.append(s)
-    s.title("当前薄切片：TLP250 已从 KiCad 文件跑到 PixiJS Canvas")
-    flow = ["tlp250.kicad_sym", "parseKicadSymbolLibrary", "toSymbolLibraryIR", "createSymbolLayout", "SymbolCanvas", "浏览器 Canvas"]
+    s.title("当前薄切片：TLP250 已跑通预览、编辑与导出回写")
+    flow = ["tlp250.kicad_sym", "parseKicadSymbolLibrary", "toSymbolLibraryIR", "createSymbolLayout", "SymbolCanvas", "Canvas + 导出"]
     for idx, label in enumerate(flow):
         x = 0.65 + idx * 2.05
         s.rect(x, 1.55, 1.55, 0.72, "FFFFFF", [PALETTE["kicad"], PALETTE["copper"], PALETTE["pcb"], PALETTE["gold"], PALETTE["silicon"], PALETTE["ink"]][idx], 1.0, rounded=True)
@@ -737,19 +737,19 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
         s.text(x, 3.1, 1.5, 0.45, num, 31, [PALETTE["kicad"], PALETTE["pcb"], PALETTE["silicon"], PALETTE["copper"], PALETTE["gold"]][idx], True, align="center")
         s.text(x, 3.7, 1.5, 0.18, label, 10.2, PALETTE["muted"], align="center")
     s.rect(1.25, 4.65, 10.4, 0.95, PALETTE["soft_blue"], PALETTE["silicon"], 1.0, rounded=True)
-    s.text(1.55, 4.96, 9.8, 0.2, "Vue 3 管理工作台界面，PixiJS 从 Symbol IR 绘制矩形、折线、圆、pin 和可见属性文本；两种模式分别服务 KiCad 预览与编辑辅助。", 12.8, PALETTE["ink"], True, align="center")
+    s.text(1.55, 4.96, 9.8, 0.2, "Vue 持有 editableIR；PixiJS 只上报选择/拖拽；导出前物化回 KiCad AST/CST。", 12.8, PALETTE["ink"], True, align="center")
     s.footer(16)
 
     # 17 演进路线。
     s = SlideBuilder(prs, SlideMeta("演进路线"))
     slides.append(s)
-    s.title("推荐演进路线：先精度闭环，再进入交互和编辑")
+    s.title("推荐演进路线：先精度闭环，再扩展编辑深度")
     roadmap = [
         ("1", "geometry resolver", "统一 bounds、pin 端点、圆弧和坐标变换"),
         ("2", "SVG renderer", "建立可与 KiCad CLI 对照的精确静态渲染"),
         ("3", "CLI validation harness", "固定 TLP250 与更多 fixture 的黄金输出"),
         ("4", "PixiJS caching", "静态图元 RenderTexture、交互层分离、culling"),
-        ("5", "IR-backed editing", "编辑命令、validator、可回写导出 guardrail"),
+        ("5", "Editing expansion", "新增/删除、撤销重做、约束校验、导出 guardrail"),
     ]
     for idx, (num, head, body) in enumerate(roadmap):
         x = 0.95 + idx * 2.42
@@ -759,7 +759,7 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
         s.line(x + 0.55, 1.92, x + 2.1, 1.92, PALETTE["grid"], 1.2)
         s.text(x - 0.1, 2.55, 1.95, 0.28, head, 11.8, PALETTE["ink"], True, align="center", mono=True)
         s.text(x - 0.08, 3.1, 1.9, 0.62, body, 10.2, PALETTE["muted"], align="center")
-    s.text(1.1, 5.25, 10.9, 0.62, "取舍：不要一开始做完整原理图编辑或多人协同。当前核心风险是格式、语义和渲染正确性，必须先把闭环做实。", 16, PALETTE["kicad"], True, align="center")
+    s.text(1.1, 5.25, 10.9, 0.62, "取舍：不要过早进入完整原理图编辑或多人协同。当前核心风险仍是格式、语义、渲染精度和编辑导出闭环。", 16, PALETTE["kicad"], True, align="center")
     s.footer(17)
 
     # 18 结尾原则。
@@ -769,7 +769,7 @@ def create_deck() -> tuple[Presentation, list[SlideBuilder]]:
     principles = [
         ("文件语义优先", "KiCad S-expression、AST 和 IR 先正确，画布只是结果。"),
         ("投影层可替换", "SVG、PixiJS、X6、DOM 都应能从同一 IR 派生。"),
-        ("验证成为契约", "KiCad CLI、结构快照和像素回归共同约束兼容性。"),
+        ("验证成为契约", "round-trip、编辑后重解析、SVG 快照、像素回归、KiCad CLI。"),
     ]
     for idx, (head, body) in enumerate(principles):
         y = 1.75 + idx * 1.25
